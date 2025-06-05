@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5G NR PDCP SN Robustness Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>5G NR PDCP Sequence Numbering Simulation</h1>
+            <p>Test robustness under impaired channel conditions.</p>
+        </header>
+
+        <section id="config-section">
+            <h2>Simulation Configuration</h2>
+            <form id="simulation-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="sn_length_bits">PDCP SN Length (bits):</label>
+                        <select id="sn_length_bits" name="sn_length_bits">
+                            <option value="12" {% if params.SN_LENGTH_BITS == 12 %}selected{% endif %}>12-bit</option>
+                            <option value="18" {% if params.SN_LENGTH_BITS == 18 %}selected{% endif %}>18-bit</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="simulation_packets">Number of SDUs to Send:</label>
+                        <input type="number" id="simulation_packets" name="simulation_packets" value="{{ params.SIMULATION_PACKETS }}" min="10" max="50000" step="10">
+                    </div>
+                    <div class="form-group">
+                        <label for="t_reordering_threshold">t-Reordering Threshold (PDUs):</label>
+                        <input type="number" id="t_reordering_threshold" name="t_reordering_threshold" value="{{ params.T_REORDERING_THRESHOLD }}" min="1" max="200">
+                    </div>
+                </div>
+                <h3>Channel Impairments</h3>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="loss_rate">Loss Rate (0.0 - 1.0):</label>
+                        <input type="number" id="loss_rate" name="loss_rate" value="{{ params.LOSS_RATE }}" min="0" max="1" step="0.001">
+                    </div>
+                    <div class="form-group">
+                        <label for="reordering_rate">Reordering Rate (0.0 - 1.0):</label>
+                        <input type="number" id="reordering_rate" name="reordering_rate" value="{{ params.REORDERING_RATE }}" min="0" max="1" step="0.001">
+                    </div>
+                    <div class="form-group">
+                        <label for="duplication_rate">Duplication Rate (0.0 - 1.0):</label>
+                        <input type="number" id="duplication_rate" name="duplication_rate" value="{{ params.DUPLICATION_RATE }}" min="0" max="1" step="0.001">
+                    </div>
+                    <div class="form-group">
+                        <label for="corruption_rate">Corruption Rate (0.0 - 1.0):</label>
+                        <input type="number" id="corruption_rate" name="corruption_rate" value="{{ params.CORRUPTION_RATE }}" min="0" max="1" step="0.001">
+                    </div>
+                </div>
+                <button type="submit" id="run-simulation-btn">Run Simulation</button>
+            </form>
+        </section>
+
+        <section id="results-section" style="display:none;">
+            <h2>Simulation Results</h2>
+            <div id="spinner" style="display:none; text-align: center; padding: 20px;">
+                <div class="loader"></div>
+                <p>Running simulation, please wait...</p>
+            </div>
+            <div id="error-message" class="error-box" style="display:none;"></div>
+            <div id="metrics-display">
+                <h3>Key Metrics</h3>
+                <table>
+                    <thead>
+                        <tr><th>Metric</th><th>Value</th></tr>
+                    </thead>
+                    <tbody id="metrics-table-body">
+                        <!-- Metrics will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="plots-display">
+                <h3>Visualizations</h3>
+                <div class="plot-container">
+                    <h4>PDCP COUNT Progression</h4>
+                    <img id="plot-count-progression" src="#" alt="COUNT Progression Plot" style="display:none;"/>
+                    <p id="plot-count-progression-alt" style="display:none;">Plot not available.</p>
+                </div>
+                <div class="plot-container">
+                    <h4>Reordering Buffer Occupancy</h4>
+                    <img id="plot-buffer-occupancy" src="#" alt="Buffer Occupancy Plot" style="display:none;"/>
+                     <p id="plot-buffer-occupancy-alt" style="display:none;">Plot not available.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
