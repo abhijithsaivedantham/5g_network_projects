@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5G PDCP Integrity Simulation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <i class="fa-solid fa-tower-broadcast header-icon"></i>
+            <h1>5G NR PDCP Integrity Simulation</h1>
+            <i class="fa-solid fa-shield-halved header-icon"></i>
+        </header>
+        <p class="subtitle">Visualizing how MAC-I protects data against tampering.</p>
+
+        <!-- CONTROLS -->
+        <div class="controls-card">
+            <div class="control-group">
+                <label for="tamper-toggle" class="toggle-label">Simulate Malicious Attack?</label>
+                <label class="switch">
+                    <input type="checkbox" id="tamper-toggle">
+                    <span class="slider round"></span>
+                </label>
+                <span id="tamper-status" class="status-text-off">OFF</span>
+            </div>
+            <div class="button-group">
+                <button id="run-button" class="btn btn-primary"><i class="fa-solid fa-play"></i> Run Simulation</button>
+                <button id="reset-button" class="btn btn-secondary"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+            </div>
+        </div>
+
+        <!-- SIMULATION AREA -->
+        <main class="simulation-area">
+            <div class="flow-column" id="tx-column">
+                <h3><i class="fa-solid fa-arrow-up-from-bracket"></i> PDCP Transmitter (Tx)</h3>
+                <div class="log-box" id="tx-log">
+                    <p class="placeholder">Awaiting transmission...</p>
+                </div>
+            </div>
+            <div class="flow-arrow" id="arrow1"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="flow-column" id="channel-column">
+                <h3><i class="fa-solid fa-wifi"></i> Radio Channel</h3>
+                <div class="log-box" id="channel-log">
+                     <p class="placeholder">Packets will travel here.</p>
+                </div>
+            </div>
+            <div class="flow-arrow" id="arrow2"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="flow-column" id="rx-column">
+                <h3><i class="fa-solid fa-arrow-down-to-bracket"></i> PDCP Receiver (Rx)</h3>
+                <div class="log-box" id="rx-log">
+                     <p class="placeholder">Awaiting reception...</p>
+                </div>
+            </div>
+        </main>
+        
+        <!-- RESULTS AREA -->
+        <section id="results-area" class="results-card hidden">
+            <h3><i class="fa-solid fa-chart-pie"></i> Simulation Results</h3>
+            <div class="results-grid">
+                <div class="result-item">
+                    <h4>Integrity Key</h4>
+                    <span id="result-key" class="mono"></span>
+                </div>
+                <div class="result-item">
+                    <h4>Bearer ID</h4>
+                    <span id="result-bearer" class="mono"></span>
+                </div>
+                <div class="result-item">
+                    <h4>Packets Sent</h4>
+                    <span id="result-sent" class="stat"></span>
+                </div>
+                <div class="result-item">
+                    <h4>Packets Delivered</h4>
+                    <span id="result-delivered" class="stat success"></span>
+                </div>
+                <div class="result-item">
+                    <h4>Packets Discarded</h4>
+                    <span id="result-discarded" class="stat failure"></span>
+                </div>
+                <div class="result-item">
+                    <h4>Final Status</h4>
+                    <span id="result-status"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER / INFO -->
+        <footer>
+            <h4>How It Works</h4>
+            <p>
+                <strong>1. Protection (Tx):</strong> For each data packet, the transmitter calculates a 32-bit <strong>Message Authentication Code (MAC-I)</strong> using a shared secret key, the packet's sequence number (COUNT), and other parameters. This MAC-I is attached to the packet.
+                <br>
+                <strong>2. Transmission:</strong> The packet travels over the air, where it could be accidentally corrupted or maliciously tampered with.
+                <br>
+                <strong>3. Verification (Rx):</strong> The receiver gets the packet and independently re-calculates the MAC-I (called X-MAC) using the same inputs. If the received MAC-I matches the calculated X-MAC, the packet is authentic and accepted. If they don't match, the packet has been altered, and <strong>it is discarded immediately</strong> to ensure security.
+            </p>
+        </footer>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
