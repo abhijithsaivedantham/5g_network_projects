@@ -1,0 +1,133 @@
+/* General Body and Font Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+}
+
+h1 {
+    color: #03dac6; /* A vibrant teal color for the title */
+    font-weight: 700;
+    letter-spacing: 1px;
+    animation: fadeInDown 1s ease-in-out;
+}
+
+/* Input Section Styles */
+.input-section {
+    margin: 30px 0;
+}
+
+textarea {
+    width: 100%;
+    max-width: 600px;
+    height: 100px;
+    padding: 15px;
+    font-size: 16px;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 2px solid #333;
+    border-radius: 8px;
+    resize: vertical;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    box-sizing: border-box; /* Important for padding and width calculation */
+}
+
+textarea:focus {
+    border-color: #bb86fc; /* A vibrant purple for focus */
+    box-shadow: 0 0 8px rgba(187, 134, 252, 0.5);
+    outline: none;
+}
+
+button {
+    background: linear-gradient(45deg, #bb86fc, #3700b3);
+    color: white;
+    padding: 12px 25px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.3s;
+}
+
+button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(187, 134, 252, 0.4);
+}
+
+button:active {
+    transform: translateY(-1px);
+}
+
+/* Results Grid and Card Styles */
+.results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.card {
+    background: #1e1e1e;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    animation: fadeInUp 0.5s ease-out;
+    text-align: left;
+    border-left: 5px solid;
+}
+
+.card:nth-of-type(1) { border-color: #03dac6; } /* Plaintext - Teal */
+.card:nth-of-type(2) { border-color: #fbbc05; } /* Ciphertext - Yellow/Orange */
+.card:nth-of-type(3) { border-color: #34a853; } /* Deciphered - Green */
+.card:nth-of-type(4) { border-color: #ea4335; } /* Eavesdrop - Red */
+
+.card h3 {
+    margin: 0 0 15px;
+    font-size: 20px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+.card p {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 14px;
+    word-break: break-all;
+    color: #b0b0b0;
+    min-height: 40px; /* Ensures cards don't jump in height */
+    line-height: 1.6;
+}
+
+/* Chart Container Styles */
+.chart-container {
+    margin-top: 40px;
+    padding: 20px;
+    background: #1e1e1e;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Animations */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
