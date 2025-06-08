@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>SDAP PDU Builder & Decoder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f0f4f8;
+    }
+    h1 {
+      color: #333;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+    }
+    input {
+      padding: 8px;
+      margin-top: 4px;
+      width: 300px;
+      font-size: 1em;
+    }
+    button {
+      margin-top: 16px;
+      padding: 10px 20px;
+      font-size: 1em;
+      background-color: #007acc;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    pre {
+      background-color: #e0e0e0;
+      padding: 12px;
+      white-space: pre-wrap;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>SDAP PDU Builder & Decoder</h1>
+
+  <label for="qfi">QoS Flow Identifier (QFI):</label>
+  <input type="number" id="qfi" min="0" max="63" value="9" />
+
+  <label for="message">Message Payload:</label>
+  <input type="text" id="message" value="Hello 5G SDAP!" />
+
+  <button onclick="buildAndDecode()">Build & Decode</button>
+
+  <pre id="output"></pre>
+
+  <script>
+    function toHexString(byteArray) {
+      return Array.from(byteArray, byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+    }
+
+    function buildAndDecode() {
+      const qfi = parseInt(document.getElementById("qfi").value);
+      const message = document.getElementById("message").value;
+
+      if (isNaN(qfi) || qfi < 0 || qfi > 63) {
+        alert("QFI must be between 0 and 63.");
+        return;
+      }
+
+      // Build SDAP Header (1 byte): D/C = 1, R = 0, QFI = lower 6 bits
+      const headerByte = (1 << 7) | (0 << 6) | (qfi & 0x3F);  // 10000000 | QFI
+      const encoder = new TextEncoder();
+      const payloadBytes = encoder.encode(message);
+      const pduBytes = new Uint8Array(1 + payloadBytes.length);
+      pduBytes[0] = headerByte;
+      pduBytes.set(payloadBytes, 1);
+
+      // Decode header
+      const d_c = (headerByte & 0b10000000) >> 7;
+      const r_bit = (headerByte & 0b01000000) >> 6;
+      const decoded_qfi = headerByte & 0b00111111;
+      const decoder = new TextDecoder();
+      const decodedPayload = decoder.decode(pduBytes.slice(1));
+
+      // Display results
+      const output = `
+SDAP PDU (hex): ${toHexString(pduBytes)}
+Header Byte: 0b${(headerByte >> 6).toString(2).padStart(2, '0')}
+QFI: ${decoded_qfi}
+Payload: ${decodedPayload}
+`;
+      document.getElementById("output").textContent = output.trim();
+    }
+  </script>
+</body>
+</html>

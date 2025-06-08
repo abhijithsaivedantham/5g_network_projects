@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detailed Interactive PDCP Layer Functional View</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --primary-accent: #00bcd4;
+            --secondary-accent: #80deea;
+            --text-color: #e0e0e0;
+            --text-muted: #9e9e9e;
+            --text-strong: #ffffff;
+            --text-highlight: #ffab40;
+            --text-config: #a5d6a7;
+            --border-color: #00796b;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            background: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-strong);
+            font-size: 2.5em;
+            margin-bottom: 40px;
+            border-bottom: 4px solid var(--primary-accent);
+            padding-bottom: 15px;
+            text-shadow: 0 0 10px rgba(0, 188, 212, 0.3);
+        }
+
+        .pdcp-diagram-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .entity-column {
+            flex: 1;
+            min-width: 450px;
+            max-width: 600px;
+            background: linear-gradient(145deg, #2a2a2a, #212121);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+        }
+
+        .entity-title {
+            font-size: 2em;
+            color: var(--secondary-accent);
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .entity-subtitle {
+            font-size: 1em;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: -5px;
+            margin-bottom: 25px;
+        }
+
+        details.functional-block {
+            background: var(--surface-color);
+            margin-bottom: 15px;
+            border: 1px solid #333;
+            border-left: 5px solid transparent;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease-in-out;
+        }
+
+        details.functional-block:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            border-left-color: var(--primary-accent);
+        }
+
+        details.functional-block summary {
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 1.25em;
+            color: var(--text-strong);
+            list-style: none;
+            position: relative;
+            transition: background-color 0.2s ease;
+            outline: none;
+        }
+        
+        details.functional-block summary::-webkit-details-marker { display: none; }
+
+        details.functional-block summary::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 5px;
+            background: var(--primary-accent);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+            transform-origin: bottom;
+        }
+
+        details.functional-block[open] summary::before {
+            transform: scaleY(1);
+            transform-origin: top;
+        }
+
+        details.functional-block summary .summary-icon {
+            margin-right: 12px;
+            display: inline-block;
+            transition: transform 0.3s ease-in-out;
+            color: var(--secondary-accent);
+            vertical-align: middle;
+        }
+        
+        details.functional-block[open] summary .summary-icon {
+            transform: rotate(90deg);
+        }
+
+        details.functional-block[open] summary {
+            background-color: #006064;
+        }
+        
+        details.functional-block summary:hover {
+            background-color: #333;
+        }
+        
+        .block-content {
+            padding: 0 20px 0 45px;
+            background: #282828;
+            border-top: 1px dashed var(--border-color);
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+
+        details[open] > .block-content {
+            padding: 15px 20px 20px 45px;
+            max-height: 2000px; /* Large enough for content */
+            opacity: 1;
+        }
+
+        .block-content h3 { display: inline; font-weight: normal; }
+        .block-content .details {
+            font-style: italic;
+            color: var(--text-muted);
+            font-size: 0.8em;
+            display: block;
+            margin-left: 1.5em;
+            margin-top: 3px;
+        }
+
+        .block-description { font-size: 0.95em; color: var(--text-color); line-height: 1.6; }
+        .block-description strong { color: var(--secondary-accent); }
+        .block-description ul { padding-left: 20px; margin: 8px 0; }
+        .block-description li { margin-bottom: 6px; }
+        .block-description .config-note {
+            font-style: italic;
+            color: var(--text-config);
+            font-size: 0.9em;
+            display: block;
+            margin-top: 10px;
+            padding: 5px;
+            background: rgba(165, 214, 167, 0.1);
+            border-left: 3px solid var(--text-config);
+        }
+        .block-description .important-note {
+            font-weight: bold;
+            color: var(--text-highlight);
+        }
+
+        .analogy-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 171, 64, 0.05);
+            border: 1px dashed var(--text-highlight);
+            border-radius: 6px;
+        }
+        .analogy-box h4 {
+            margin: 0 0 10px 0;
+            color: var(--text-highlight);
+            font-size: 1.1em;
+        }
+        
+        .arrow-down, .arrow-up {
+            text-align: center;
+            font-size: 2em;
+            color: var(--primary-accent);
+            margin: 10px 0;
+            text-shadow: 0 0 8px rgba(0, 188, 212, 0.5);
+        }
+
+        .radio-interface-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            flex-basis: 150px;
+            align-self: center;
+        }
+
+        .radio-interface-box {
+            background: #424242;
+            color: var(--text-strong);
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 2px solid var(--primary-accent);
+            box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);
+            margin: 20px 0;
+            animation: pulse 2s infinite ease-in-out;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 20px rgba(0, 188, 212, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(0, 188, 212, 0.7); }
+            100% { box-shadow: 0 0 20px rgba(0, 188, 212, 0.4); }
+        }
+
+        .interface-arrow.thick-horizontal {
+            width: 80%; height: 10px; background: #607d8b; margin: 10px auto;
+            border-radius: 5px; position: relative;
+        }
+        .interface-arrow.thick-horizontal::before, .interface-arrow.thick-horizontal::after {
+            content: ''; position: absolute; top: 50%; width: 0; height: 0; border-style: solid;
+        }
+        .interface-arrow.thick-horizontal::before { left: -10px; margin-top: -10px; border-width: 10px 10px 10px 0; border-color: transparent #607d8b transparent transparent; }
+        .interface-arrow.thick-horizontal::after { right: -10px; margin-top: -10px; border-width: 10px 0 10px 10px; border-color: transparent transparent transparent #607d8b; }
+
+        .caption { text-align: center; margin-top: 30px; font-size: 0.9em; color: var(--text-muted); }
+
+    </style>
+</head>
+<body>
+    <h1>Detailed Interactive PDCP Layer Functional View</h1>
+
+    <div class="pdcp-diagram-container">
+
+        <!-- Transmitting PDCP Entity -->
+        <div class="entity-column">
+            <div class="entity-title">Alice's Device</div>
+            <div class="entity-subtitle">Transmitting PDCP entity (Source)</div>
+            <div class="arrow-down">↓</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Transmission buffer & SN Assignment</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Temporarily stores Service Data Units (SDUs) from upper layers and assigns a unique PDCP Sequence Number (SN) to each.
+                        <ul>
+                            <li><strong>SN Assignment:</strong> A monotonically increasing number (e.g., 1, 2, 3...) is assigned to each packet. The SN length (12 or 18 bits) is configured by RRC.</li>
+                            <li><strong>Buffering:</strong> Manages packets awaiting processing and may use a `discardTimer` to drop old packets that are no longer relevant.</li>
+                            <li><span class="important-note">The COUNT value (HFN + SN) is a critical input for all security functions.</span></li>
+                        </ul>
+                        <span class="config-note">SN length, discard timers are RRC configured.</span>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: Hitting 'Send'</h4>
+                        <p>Alice types "Dinner at 8?" and sends a picture of a restaurant. Her phone's WhatsApp application hands these to the PDCP layer. This block acts like a mailroom clerk who takes the message (the text) and the package (the picture), putting them in the 'out' tray. The clerk assigns each a unique tracking number (the PDCP SN), like #101 for the text and #102 for the picture.</p>
+                    </div>
+                </div>
+            </details>
+            <div class="arrow-down">↓</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Header or Data Compression</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Reduces the amount of data transmitted over the air to improve efficiency.
+                        <ul>
+                            <li><strong>Header Compression (ROHC):</strong> Shrinks large IP/UDP/TCP headers, especially effective for small packets like VoIP.</li>
+                            <li><strong>Uplink Data Compression (UDC):</strong> Compresses the actual user data payload.</li>
+                        </ul>
+                         <span class="config-note">ROHC profiles are configured by RRC based on traffic type.</span>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: Shrinking the Package</h4>
+                        <p>Before sending, the mailroom clerk uses a vacuum sealer. The technical info on the package (IP headers) is shrunk down to just the essentials (ROHC). The large restaurant picture is compressed into a smaller file, like creating a .zip file (UDC). This makes the package smaller and cheaper to ship.</p>
+                    </div>
+                </div>
+            </details>
+            <div class="arrow-down">↓</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Integrity Protection</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Protects data from being tampered with during transmission. Mandatory for control messages (SRBs), optional for user data (DRBs).
+                        <ul>
+                            <li>A Message Authentication Code (MAC-I) is calculated using a secret integrity key and the COUNT value.</li>
+                            <li>This MAC-I is appended to the packet. Any change to the data will invalidate the MAC-I.</li>
+                            <li><span class="important-note">Prevents an attacker from modifying a message in transit without detection.</span></li>
+                        </ul>
+                         <span class="config-note">Integrity algorithm and keys are configured via RRC security procedures.</span>
+                    </p>
+                     <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: The Wax Seal</h4>
+                        <p>The clerk now puts a unique, tamper-proof wax seal (the MAC-I) on the message and the shrunken package. This seal is created with a special stamp (the integrity key) that only Alice and Bob have. If anyone tries to open or alter the contents, the seal will be broken, and Bob will know immediately upon receipt.</p>
+                    </div>
+                </div>
+            </details>
+            <div class="arrow-down">↓</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Ciphering</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Encrypts data to ensure confidentiality and prevent eavesdropping.
+                        <ul>
+                            <li>The packet (including the MAC-I) is scrambled using a secret ciphering key and the COUNT value.</li>
+                            <li>This process turns the data into unreadable gibberish for anyone without the key.</li>
+                            <li><span class="important-note">The COUNT value ensures a unique encryption pattern for every packet, enhancing security.</span></li>
+                        </ul>
+                        <span class="config-note">Ciphering algorithm and keys are configured via RRC security procedures.</span>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: The Locked Box</h4>
+                        <p>This is WhatsApp's end-to-end encryption. The clerk places the sealed message and package into a sturdy lockbox (Ciphering). The box is locked using a key (the ciphering key) that only Bob possesses. Now, even if someone intercepts the box, all they'll see is a locked container with no way to view the contents.</p>
+                    </div>
+                </div>
+            </details>
+            <div class="arrow-down">↓</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Add PDCP Header</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Prepends a header containing control information (like the SN) needed by the receiver.
+                        <ul>
+                            <li>The header contains the PDCP SN and a D/C (Data/Control) bit to distinguish user data from control messages.</li>
+                            <li>This is the final step before the packet is ready to be handed to the lower layers.</li>
+                        </ul>
+                    </p>
+                     <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: The Shipping Label</h4>
+                        <p>Finally, a shipping label (the PDCP Header) is stuck onto the outside of the locked box. This label clearly shows the tracking number (#101 or #102) assigned at the very beginning. It doesn't reveal the contents, but it's essential for the receiving end to identify and sort the incoming mail.</p>
+                    </div>
+                </div>
+            </details>
+            <div class="arrow-down">↓</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Routing / Duplication</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Decides which lower layer RLC entity will carry the packet.
+                        <ul>
+                            <li><strong>Routing:</strong> Normally sends the packet down a single path.</li>
+                            <li><strong>PDCP Duplication:</strong> For ultra-reliable communication (URLLC), it can create an identical copy of the packet and send both copies over different paths (e.g., two different carriers) to increase the chance of successful delivery.</li>
+                        </ul>
+                         <span class="config-note">PDCP duplication is configured by RRC for specific data bearers.</span>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: Choosing the Delivery Service</h4>
+                        <p>Alice's phone is connected to both Wi-Fi and a strong 5G signal. To make sure her important dinner plans get through, her phone decides to use duplication. It makes an exact copy of the locked box with its shipping label, and sends one via a Wi-Fi courier and the other via a 5G courier. Now there are two chances for the message to reach Bob quickly and reliably.</p>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Radio Interface -->
+        <div class="radio-interface-container">
+             <div class="interface-arrow thick-horizontal"></div>
+            <div class="radio-interface-box">
+                Radio Interface<br>(Wi-Fi / 5G)
+            </div>
+             <div class="interface-arrow thick-horizontal"></div>
+        </div>
+
+        <!-- Receiving PDCP Entity -->
+        <div class="entity-column">
+            <div class="entity-title">Bob's Device</div>
+            <div class="entity-subtitle">Receiving PDCP entity (Destination)</div>
+            <div class="arrow-up">↑</div>
+            
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Header or Data Decompression</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Reconstructs the original data by reversing any compression.
+                        <ul>
+                            <li><strong>Header Decompression (ROHC):</strong> Rebuilds the full IP/UDP/TCP headers from the compressed version.</li>
+                            <li><strong>Data Decompression (UDC):</strong> Reverses any payload compression.</li>
+                        </ul>
+                         <span class="config-note">ROHC configuration must match the transmitter's.</span>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: Unpacking the Contents</h4>
+                        <p>This is the final step. The message "Dinner at 8?" is shown on Bob's screen. If there was a picture, the mailroom on his phone unzips the compressed file (UDC Decompression), restoring the image to its full quality so Bob can see which restaurant Alice suggested. The message is now fully delivered and understandable.</p>
+                    </div>
+                </div>
+            </details>
+             <div class="arrow-up">↑</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Reception buffer & Reordering</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Manages received packets to ensure reliable and in-order delivery.
+                        <ul>
+                            <li><strong>Reordering:</strong> For bearers requiring in-order delivery, it buffers packets and arranges them by SN before passing them up.</li>
+                            <li><strong>Duplicate Discarding:</strong> If two identical packets arrive (due to duplication), it identifies them by their SN, keeps the first one, and discards the second.</li>
+                        </ul>
+                         <span class="config-note">`t-Reordering` timer and delivery order are RRC configured.</span>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: Sorting the Mail</h4>
+                        <p>Bob's phone receives two boxes: one from the Wi-Fi courier and one from the 5G courier a moment later. The mailroom checks the tracking numbers. It sees both are #102. It keeps the first one and throws the identical duplicate away. If message #102 (picture) arrived before #101 (text), it holds onto #102 until #101 arrives, then puts them in the correct order before proceeding.</p>
+                    </div>
+                </div>
+            </details>
+            <div class="arrow-up">↑</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Integrity Verification</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Checks if received data has been modified.
+                        <ul>
+                            <li>The receiver recalculates the MAC-I on the received data using the same secret key and COUNT.</li>
+                            <li>It compares its calculated MAC-I with the one that came with the packet. If they don't match, the packet is discarded.</li>
+                        </ul>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: Checking the Wax Seal</h4>
+                        <p>After unlocking the box, Bob's phone inspects the wax seal (MAC-I). Using its own identical stamp (the integrity key), it makes a fresh seal and compares it to the one on the message. They match perfectly! This confirms the message is authentic and hasn't been tampered with. If the seal had been broken or didn't match, the phone would discard the message as untrustworthy.</p>
+                    </div>
+                </div>
+            </details>
+            <div class="arrow-up">↑</div>
+
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Deciphering</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Reverses the encryption to recover the original plaintext data.
+                        <ul>
+                            <li>Uses the same secret ciphering key and COUNT value as the transmitter to decrypt the payload.</li>
+                        </ul>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: Unlocking the Box</h4>
+                        <p>Now that the box has been identified, Bob's phone uses its unique private key (the ciphering key) to unlock it. The unreadable, scrambled gibberish inside is instantly transformed back into the original content: the message with its wax seal. The contents are now readable to the phone, but not yet shown to Bob.</p>
+                    </div>
+                </div>
+            </details>
+            <div class="arrow-up">↑</div>
+            
+            <details class="functional-block">
+                <summary><span class="summary-icon">▶</span>Remove PDCP Header</summary>
+                <div class="block-content">
+                    <p class="block-description">
+                        <strong>Purpose:</strong> Parses and removes the header to extract the SN and payload.
+                        <ul>
+                            <li>This is the first processing step for a received packet.</li>
+                            <li>The extracted SN is crucial for reordering, duplicate detection, and as an input (with HFN) to the security functions.</li>
+                        </ul>
+                    </p>
+                    <div class="analogy-box">
+                        <h4>WhatsApp Message Analogy: Reading the Shipping Label</h4>
+                        <p>A locked box arrives at the mailroom on Bob's phone. The very first thing the clerk does is read the shipping label (the PDCP header). It notes the tracking number (e.g., #102) and sees that it's a standard data package. The label is then peeled off, and the box is ready for the next step: unlocking.</p>
+                    </div>
+                </div>
+            </details>
+        </div>
+    </div>
+
+
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SDAP QoS Flow Packet Distribution</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h2 {
+      color: #333;
+    }
+    label {
+      font-weight: bold;
+    }
+    textarea, input {
+      width: 100%;
+      margin: 5px 0 15px;
+      padding: 8px;
+    }
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+    }
+    #packet-output {
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-top: 10px;
+    }
+    canvas {
+      background: #fff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>SDAP QoS Flow Packet Distribution</h2>
+
+  <label for="qfiInput">Enter QFIs and Weights (Format: QFI:weight, separated by commas)</label>
+  <input type="text" id="qfiInput" placeholder="Example: 5:0.3, 9:0.5, 1:0.2" />
+
+  <label for="totalPackets">Total Number of Packets</label>
+  <input type="number" id="totalPackets" value="200" />
+
+  <button onclick="simulatePackets()">Simulate</button>
+
+  <div id="packet-output">Output will appear here...</div>
+
+  <canvas id="qfiChart" width="600" height="400"></canvas>
+
+  <script>
+    let chart;
+
+    function simulatePackets() {
+      const input = document.getElementById("qfiInput").value;
+      const totalPackets = parseInt(document.getElementById("totalPackets").value, 10);
+
+      // Parse QFI input
+      const entries = input.split(',').map(e => e.trim().split(':'));
+      const QFIs = [];
+      const weights = [];
+      const packetCount = {};
+
+      for (const [qfiStr, weightStr] of entries) {
+        const qfi = parseInt(qfiStr);
+        const weight = parseFloat(weightStr);
+        if (!isNaN(qfi) && !isNaN(weight)) {
+          QFIs.push(qfi);
+          weights.push(weight);
+          packetCount[qfi] = 0;
+        }
+      }
+
+      if (QFIs.length === 0 || weights.reduce((a, b) => a + b, 0) <= 0) {
+        alert("Invalid input! Please enter QFIs and weights properly.");
+        return;
+      }
+
+      // Normalize weights if they don't sum to 1
+      const totalWeight = weights.reduce((a, b) => a + b, 0);
+      const normalizedWeights = weights.map(w => w / totalWeight);
+
+      // Simulate packet flow
+      for (let i = 0; i < totalPackets; i++) {
+        const selectedQFI = weightedChoice(QFIs, normalizedWeights);
+        packetCount[selectedQFI]++;
+      }
+
+      // Show output
+      document.getElementById("packet-output").innerText = `Packet Count per QFI: ${JSON.stringify(packetCount)}`;
+
+      // Plot chart
+      const labels = QFIs.map(qfi => `QFI ${qfi}`);
+      const data = QFIs.map(qfi => packetCount[qfi]);
+
+      if (chart) chart.destroy();
+      const ctx = document.getElementById("qfiChart").getContext("2d");
+      chart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Number of Packets',
+            data: data,
+            backgroundColor: "skyblue",
+            borderColor: "black",
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Packets Sent' }
+            },
+            x: {
+              title: { display: true, text: 'QFI (Service Type)' }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: "SDAP QoS Flow Packet Distribution"
+            }
+          }
+        }
+      });
+    }
+
+    // Weighted random selection
+    function weightedChoice(items, weights) {
+      let sum = 0;
+      const r = Math.random();
+      for (let i = 0; i < items.length; i++) {
+        sum += weights[i];
+        if (r < sum) return items[i];
+      }
+      return items[items.length - 1];
+    }
+  </script>
+
+</body>
+</html>
