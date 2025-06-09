@@ -1,0 +1,739 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5G NR RLC Testing</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+</head>
+<body>
+  <div id="root" class="min-h-screen bg-gray-100"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const App = () => {
+      const [results, setResults] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [pyodide, setPyodide] = useState(null);
+      const [error, setError] = useState(null);
+
+      useEffect(() => {
+        async function loadPyodideAndRun() {
+          try {
+            const pyodideInstance = await loadPyodide();
+            await pyodideInstance.loadPackage('micropip');
+            setPyodide(pyodideInstance);
+          } catch (err) {
+            setError(`Failed to load Pyodide: ${err.message}`);
+          }
+        }
+        loadPyodideAndRun();
+      }, []);
+
+      const runTests = async () => {
+        if (!pyodide) {
+          setError('Pyodide not loaded');
+          return;
+        }
+        setLoading(true);
+        setError(null);
+        let pythonCode;
+        try {
+          const response = await fetch('/rlc_simulation.py', {
+            cache: 'no-store',
+            headers: { 'Content-Type': 'text/plain' }
+          });
+          if (!response.ok) {
+            throw new Error(`Fetch failed: ${response.status} ${response.statusText}`);
+          }
+          pythonCode = await response.text();
+          console.log('Fetched content (first 500 chars):', pythonCode.slice(0, 500));
+          if (!pythonCode.includes('import asyncio')) {
+            throw new Error(`Fetched content is not Python code. Starts with: ${pythonCode.slice(0, 50)}`);
+          }
+        } catch (fetchError) {
+          console.error('Fetch error:', fetchError);
+          // Only set error if embedded code also fails
+          pythonCode = document.querySelector('#python-code').textContent;
+          console.log('Using embedded Python code (first 200 chars):', pythonCode.slice(0, 200));
+        }
+        try {
+          await pyodide.runPythonAsync(pythonCode);
+          const results = await pyodide.runPythonAsync('main()');
+          const parsedResults = JSON.parse(results);
+          if (!Array.isArray(parsedResults)) {
+            throw new Error('Invalid results format');
+          }
+          setResults(parsedResults);
+          // Clear error if results are successful, even if fetch failed
+          setError(null);
+        } catch (error) {
+          setError(`Error running Python code: ${error.message}`);
+          console.error('Python execution error:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="container mx-auto p-4">
+          <h1 className="text-3xl font-bold mb-4 text-center">5G NR RLC Testing: AM and UM Modes</h1>
+          <button
+            onClick={runTests}
+            disabled={loading || !pyodide}
+            className="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+          >
+            {loading ? 'Running Tests...' : 'Run All Tests'}
+          </button>
+          {error && (
+            <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+          {results.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse bg-white shadow-md">
+                <thead>
+                  <tr className="bg-gray-200">
+                    <th className="border p-2">Mode</th>
+                    <th className="border p-2">Scenario</th>
+                    <th className="border p-2">Retransmission Rate</th>
+                    <th className="border p-2">Throughput (PDUs/s)</th>
+                    <th className="border p-2">Avg Latency (s)</th>
+                    <th className="border p-2">Packet Loss Rate</th>
+                    <th className="border p-2">Buffer Occupancy</th>
+                    <th className="border p-2">Logs</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((result, index) => (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="border p-2">{result.mode}</td>
+                      <td className="border p-2">{result.scenario}</td>
+                      <td className="border p-2">{result.kpis.retransmission_rate.toFixed(4)}</td>
+                      <td className="border p-2">{result.kpis.throughput.toFixed(2)}</td>
+                      <td className="border p-2">{result.kpis.avg_latency.toFixed(4)}</td>
+                      <td className="border p-2">{result.kpis.packet_loss_rate.toFixed(4)}</td>
+                      <td className="border p-2">{result.kpis.buffer_occupancy.toFixed(4)}</td>
+                      <td className="border p-2">{result.logs.join(', ')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script> -->
+
+  <!-- Embedded Python code as fallback -->
+  <!-- <script id="python-code" type="text/python">
+import asyncio
+import random
+import time
+from collections import deque
+import json
+
+class RLC_PDU:
+    def __init__(self, seq_num, data, size):
+        self.seq_num = seq_num
+        self.data = data
+        self.size = size
+        self.acked = False
+        self.sent_time = None
+
+class RLCEntity:
+    def __init__(self, mode, buffer_size=1000, reordering_timer=0.1, poll_timer=0.05):
+        self.mode = mode
+        self.buffer_size = buffer_size
+        self.tx_buffer = deque(maxlen=buffer_size)
+        self.rx_buffer = deque()
+        self.next_seq_num = 0
+        self.reordering_timer = reordering_timer
+        self.poll_timer = poll_timer
+        self.acked_seq = -1
+        self.stats = {
+            'sent_pdus': 0,
+            'received_pdus': 0,
+            'retransmissions': 0,
+            'packet_loss': 0,
+            'total_latency': 0,
+            'buffer_occupancy': 0,
+            'throughput': 0
+        }
+
+    def send_pdu(self, data, size, packet_loss_prob):
+        pdu = RLC_PDU(self.next_seq_num, data, size)
+        pdu.sent_time = time.time()
+        self.tx_buffer.append(pdu)
+        self.stats['sent_pdus'] += 1
+        self.stats['buffer_occupancy'] = len(self.tx_buffer)
+        self.next_seq_num += 1
+        if random.random() > packet_loss_prob:
+            return pdu
+        self.stats['packet_loss'] += 1
+        return None
+
+    async def receive_pdu(self, pdu, packet_loss_prob):
+        if pdu is None:
+            return
+        if self.mode == 'AM':
+            if random.random() > packet_loss_prob:
+                self.rx_buffer.append(pdu)
+                self.stats['received_pdus'] += 1
+                latency = time.time() - pdu.sent_time
+                self.stats['total_latency'] += latency
+                pdu.acked = True
+                self.acked_seq = max(self.acked_seq, pdu.seq_num)
+        else:
+            self.rx_buffer.append(pdu)
+            self.stats['received_pdus'] += 1
+            latency = time.time() - pdu.sent_time
+            self.stats['total_latency'] += latency
+
+    async def retransmit(self, packet_loss_prob):
+        if self.mode != 'AM':
+            return
+        for pdu in list(self.tx_buffer):
+            if not pdu.acked and (time.time() - pdu.sent_time) > self.reordering_timer:
+                self.stats['retransmissions'] += 1
+                if random.random() > packet_loss_prob:
+                    self.rx_buffer.append(pdu)
+                    self.stats['received_pdus'] += 1
+                    latency = time.time() - pdu.sent_time
+                    self.stats['total_latency'] += latency
+                    pdu.acked = True
+                    self.acked_seq = max(self.acked_seq, pdu.seq_num)
+
+    def segment_sdu(self, sdu_data, max_pdu_size):
+        pdus = []
+        for i in range(0, len(sdu_data), max_pdu_size):
+            pdu_data = sdu_data[i:i + max_pdu_size]
+            pdus.append(RLC_PDU(self.next_seq_num, pdu_data, len(pdu_data)))
+            self.next_seq_num += 1
+        return pdus
+
+    def compute_kpis(self, duration):
+        retrans_rate = self.stats['retransmissions'] / max(self.stats['sent_pdus'], 1)
+        throughput = self.stats['received_pdus'] / max(duration, 1)
+        avg_latency = self.stats['total_latency'] / max(self.stats['received_pdus'], 1) if self.stats['received_pdus'] > 0 else 0
+        packet_loss_rate = self.stats['packet_loss'] / max(self.stats['sent_pdus'], 1)
+        buffer_occ = self.stats['buffer_occupancy'] / self.buffer_size
+        return {
+            'retransmission_rate': retrans_rate,
+            'throughput': throughput,
+            'avg_latency': avg_latency,
+            'packet_loss_rate': packet_loss_rate,
+            'buffer_occupancy': buffer_occ
+        }
+
+async def run_test_scenario(mode, scenario, num_pdus=100, packet_loss_prob=0.0, large_sdu=False, buffer_overflow=False):
+    rlc = RLCEntity(mode=mode, buffer_size=50 if buffer_overflow else 1000)
+    start_time = time.time()
+    results = {'mode': mode, 'scenario': scenario, 'logs': []}
+    
+    if large_sdu:
+        sdu = "A" * 1000
+        pdus = rlc.segment_sdu(sdu, 100)
+        for pdu in pdus:
+            sent_pdu = rlc.send_pdu(pdu.data, pdu.size, packet_loss_prob)
+            await rlc.receive_pdu(sent_pdu, packet_loss_prob)
+            await asyncio.sleep(0.01)
+    else:
+        for _ in range(num_pdus):
+            data = "TestData"
+            size = len(data)
+            sent_pdu = rlc.send_pdu(data, size, packet_loss_prob)
+            await rlc.receive_pdu(sent_pdu, packet_loss_prob)
+            await rlc.retransmit(packet_loss_prob)
+            await asyncio.sleep(0.01)
+    
+    duration = time.time() - start_time
+    kpis = rlc.compute_kpis(duration)
+    results['kpis'] = kpis
+    results['logs'].append(f"Sent: {rlc.stats['sent_pdus']}, Received: {rlc.stats['received_pdus']}, Retrans: {rlc.stats['retransmissions']}")
+    return results
+
+async def run_all_tests():
+    tests = [
+        ('AM', 'Baseline (No Loss)', 100, 0.0, False, False),
+        ('AM', 'Moderate Loss (10%)', 100, 0.1, False, False),
+        ('AM', 'High Loss (30%)', 100, 0.3, False, False),
+        ('AM', 'Buffer Overflow', 200, 0.0, False, True),
+        ('UM', 'Real-Time Video', 100, 0.0, False, False),
+        ('UM', 'Lossy Environment (15%)', 100, 0.15, False, False),
+        ('UM', 'Segmentation', 10, 0.0, True, False)
+    ]
+    results = []
+    for mode, scenario, num_pdus, loss_prob, large_sdu, buffer_overflow in tests:
+        result = await run_test_scenario(mode, scenario, num_pdus, loss_prob, large_sdu, buffer_overflow)
+        results.append(result)
+    return results
+
+async def main():
+    results = await run_all_tests()
+    return json.dumps(results)
+  </script>
+</body>
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5G RLC Visual Simulation</title>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f0f4f8; }
+    .pdu {
+      position: absolute; width: 50px; height: 30px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: bold; color: white;
+      transition: all 0.3s ease-in-out; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .pdu-buffer { width: 18px; height: 18px; margin: 2px; }
+    @keyframes fade-in { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    .fade-in { animation: fade-in 0.3s ease-out forwards; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    .pulse { animation: pulse 1.5s infinite; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useMemo } = React;
+
+    // Error Boundary Component
+    class ErrorBoundary extends React.Component {
+      state = { hasError: false, error: null };
+      static getDerivedStateFromError(error) { return { hasError: true, error }; }
+      render() {
+        if (this.state.hasError) {
+          return (
+            <div className="max-w-4xl mx-auto bg-red-100 border-l-4 border-red-500 text-red-700 p-6 rounded-md shadow-lg">
+              <p className="font-bold text-2xl mb-2">Simulation Error</p>
+              <p className="text-md">Something went wrong: {this.state.error.message}</p>
+            </div>
+          );
+        }
+        return this.props.children;
+      }
+    }
+
+    const KpiChart = ({ data, label, yLabel }) => {
+        const chartRef = useRef(null);
+        const chartInstance = useRef(null);
+        const throttledData = useMemo(() => {
+            return data.filter((_, i) => i % 5 === 0 || i === data.length - 1);
+        }, [data]);
+        useEffect(() => {
+            if (chartRef.current) {
+                const ctx = chartRef.current.getContext('2d');
+                if (chartInstance.current) chartInstance.current.destroy();
+                chartInstance.current = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: throttledData.map((_, i) => i + 1),
+                        datasets: [{ label, data: throttledData, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: false, tension: 0.3 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, title: { display: true, text: yLabel } }, x: { title: { display: true, text: 'Time Step' } } },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            return () => { if (chartInstance.current) chartInstance.current.destroy(); };
+        }, [throttledData]);
+        return <div className="relative h-32"><canvas ref={chartRef}></canvas></div>;
+    };
+
+    const App = () => {
+      const [pyodide, setPyodide] = useState(null);
+      const [pyodideLoading, setPyodideLoading] = useState(true);
+      const [pyodideError, setPyodideError] = useState(null);
+      const [isSimulating, setIsSimulating] = useState(false);
+      const [scenarios, setScenarios] = useState([]);
+      const [selectedScenario, setSelectedScenario] = useState(0);
+      const [packets, setPackets] = useState([]);
+      const [txBuffer, setTxBuffer] = useState([]);
+      const [kpis, setKpis] = useState({ retransmission_rate: 0, throughput: 0, avg_latency: 0, packet_loss_rate: 0 });
+      const [log, setLog] = useState([]);
+      const [throughputHistory, setThroughputHistory] = useState([]);
+      const [latencyHistory, setLatencyHistory] = useState([]);
+      const [fastMode, setFastMode] = useState(false);
+      const [showToast, setShowToast] = useState(false);
+      const logRef = useRef(null);
+      const pendingUpdates = useRef({ packets: [], txBuffer: [], kpis: null });
+      const logCounter = useRef(0);
+
+      useEffect(() => {
+        async function loadPyodideAndPython() {
+          try {
+            const pyodideInstance = await loadPyodide();
+            await pyodideInstance.loadPackage('micropip');
+            const pythonCode = document.querySelector('#python-code').textContent;
+            await pyodideInstance.runPythonAsync(pythonCode);
+            const scenarioData = pyodideInstance.runPython('get_scenarios_for_js()');
+            setScenarios(JSON.parse(scenarioData));
+            setPyodide(pyodideInstance);
+          } catch (err) {
+            console.error("Pyodide loading failed:", err);
+            setPyodideError(`Fatal Error: Could not initialize Python environment. Message: ${err.message}`);
+          } finally {
+            setPyodideLoading(false);
+          }
+        }
+        loadPyodideAndPython();
+      }, []);
+
+      useEffect(() => {
+        if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+      }, [log]);
+
+      const addToLog = (message, type = 'info') => {
+        logCounter.current += 1;
+        if (logCounter.current % 3 !== 0 && type !== 'start') return; // Throttle log updates
+        setLog(prev => [...prev.slice(-100), { text: `[${new Date().toLocaleTimeString()}] ${message}`, type }]);
+      };
+
+      const handlePythonEvent = (event) => {
+        let eventData;
+        try {
+          eventData = typeof event === 'string' ? JSON.parse(event) : event.toJs ? event.toJs({ dict_converter: Object.fromEntries }) : event;
+          console.log('Received Python event:', eventData);
+        } catch (err) {
+          console.error('Error parsing Python event:', err);
+          addToLog(`Error processing event: ${err.message}`, 'error');
+          return;
+        }
+        switch (eventData.type) {
+            case 'SIM_START':
+                addToLog(`Starting: ${eventData.scenario_name || 'Unknown'}`, 'start');
+                pendingUpdates.current = { packets: [], txBuffer: [], kpis: null };
+                setPackets([]); setTxBuffer([]); setKpis({ retransmission_rate: 0, throughput: 0, avg_latency: 0, packet_loss_rate: 0 });
+                setThroughputHistory([]); setLatencyHistory([]);
+                setShowToast(false);
+                break;
+            case 'TX_BUFFER_UPDATE':
+                pendingUpdates.current.txBuffer = eventData.buffer_pdus || [];
+                break;
+            case 'PDU_SENT':
+                if (eventData.pdu && eventData.pdu.seq_num != null) {
+                    addToLog(`PDU ${eventData.pdu.seq_num} Sent.`);
+                    pendingUpdates.current.packets.push({ ...eventData.pdu, status: 'in-flight' });
+                }
+                break;
+            case 'PDU_RECEIVED':
+                if (eventData.pdu && eventData.pdu.seq_num != null) {
+                    addToLog(`PDU ${eventData.pdu.seq_num} Received.`, 'success');
+                    pendingUpdates.current.packets = pendingUpdates.current.packets.map(p => p.seq_num === eventData.pdu.seq_num ? { ...p, status: 'received' } : p);
+                    setTimeout(() => setPackets(prev => prev.filter(p => p.seq_num !== eventData.pdu.seq_num)), fastMode ? 200 : 500);
+                }
+                break;
+            case 'PDU_LOST_TX':
+                if (eventData.seq_num != null) {
+                    addToLog(`PDU ${eventData.seq_num} Lost on transmit.`, 'error');
+                    pendingUpdates.current.packets = pendingUpdates.current.packets.map(p => p.seq_num === eventData.seq_num ? { ...p, status: 'lost-tx' } : p);
+                    setTimeout(() => setPackets(prev => prev.filter(p => p.seq_num !== eventData.seq_num)), fastMode ? 200 : 500);
+                }
+                break;
+            case 'PDU_LOST_ACK':
+                if (eventData.seq_num != null) {
+                    addToLog(`ACK for PDU ${eventData.seq_num} Lost.`, 'warn');
+                }
+                break;
+            case 'RETRANSMIT':
+                if (eventData.pdu && eventData.pdu.seq_num != null) {
+                    addToLog(`PDU ${eventData.pdu.seq_num} Retransmitted.`, 'warn');
+                    pendingUpdates.current.packets = pendingUpdates.current.packets.map(p => p.seq_num === eventData.pdu.seq_num ? { ...p, status: 'in-flight', isRetransmit: true } : p);
+                }
+                break;
+            case 'KPI_UPDATE':
+                if (eventData.kpis) {
+                    pendingUpdates.current.kpis = eventData.kpis;
+                    setThroughputHistory(prev => [...prev.slice(-100), eventData.kpis.throughput || 0]);
+                    setLatencyHistory(prev => [...prev.slice(-100), eventData.kpis.avg_latency || 0]);
+                    if (pendingUpdates.current.packets.length >= 5 || fastMode) {
+                        setPackets(pendingUpdates.current.packets);
+                        setTxBuffer(pendingUpdates.current.txBuffer);
+                        if (pendingUpdates.current.kpis) setKpis(pendingUpdates.current.kpis);
+                        pendingUpdates.current = { packets: pendingUpdates.current.packets, txBuffer: [], kpis: null };
+                    }
+                }
+                break;
+            case 'SIM_END':
+                addToLog(`Simulation Finished.`, 'start');
+                setPackets(pendingUpdates.current.packets);
+                setTxBuffer(pendingUpdates.current.txBuffer);
+                if (eventData.final_kpis) setKpis(eventData.final_kpis);
+                setIsSimulating(false);
+                setShowToast(true);
+                setTimeout(() => setShowToast(false), 3000);
+                break;
+        }
+      };
+
+      const runSimulation = async () => {
+        if (!pyodide || isSimulating) return;
+        setIsSimulating(true);
+        setLog([]);
+        try {
+          console.log('Starting simulation with fastMode:', fastMode);
+          pyodide.globals.set('js_event_callback', handlePythonEvent);
+          await pyodide.runPythonAsync(`
+            async def run_simulation():
+              try:
+                await run_single_test_js(${selectedScenario}, ${fastMode ? 'True' : 'False'})
+              except Exception as e:
+                print(f"Python error: {str(e)}")
+                raise
+            await run_simulation()
+          `);
+        } catch (err) {
+          console.error("Simulation error:", err);
+          addToLog(`Simulation failed: ${err.message}`, 'error');
+          setIsSimulating(false);
+        }
+      };
+
+      const renderPacket = (packet) => {
+        let styles = { top: `${20 + (packet.seq_num % 5) * 40}px`, transition: `all ${fastMode ? 0.2 : 0.3}s ease-in-out, opacity 0.2s ease-in-out` };
+        let bgColor = packet.isRetransmit ? 'bg-yellow-500' : 'bg-blue-500';
+        switch (packet.status) {
+            case 'in-flight': styles.left = '50%'; styles.transform = 'translateX(-50%)'; break;
+            case 'received': styles.left = 'calc(100% - 60px)'; bgColor = 'bg-green-500'; break;
+            case 'lost-tx': styles.left = '25%'; bgColor = 'bg-red-500'; styles.opacity = 0; break;
+            default: styles.left = '10px';
+        }
+        return <div key={packet.seq_num} className={`pdu ${bgColor}`} style={styles}>{packet.seq_num}</div>;
+      };
+
+      const renderContent = () => {
+        if (pyodideLoading) return (
+            <div className="flex flex-col justify-center items-center h-64">
+                <svg className="animate-spin -ml-1 mr-3 h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span className="text-xl font-medium text-gray-700 mt-4">Loading Python Environment...</span>
+            </div>
+        );
+        if (pyodideError) return (
+            <div className="max-w-4xl mx-auto bg-red-100 border-l-4 border-red-500 text-red-700 p-6 rounded-md shadow-lg">
+                <p className="font-bold text-2xl mb-2">Initialization Failed</p><p className="text-md">{pyodideError}</p>
+            </div>
+        );
+        return (
+            <div className="fade-in relative">
+              {showToast && (
+                <div className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-md shadow-lg z-50">
+                  Simulation completed successfully!
+                </div>
+              )}
+              <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-8">
+                  <div className="flex flex-col sm:flex-row gap-6 items-center">
+                      <div className="flex-grow w-full">
+                          <label htmlFor="scenario" className="block text-sm font-medium text-gray-700 mb-2">Select Test Scenario</label>
+                          <select id="scenario" value={selectedScenario} onChange={(e) => setSelectedScenario(parseInt(e.target.value))} disabled={isSimulating} className="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                              {scenarios.map((s, i) => <option key={i} value={i}>{s.mode} - {s.scenario}</option>)}
+                          </select>
+                      </div>
+                      <div className="flex items-center gap-4">
+                          <label className="flex items-center">
+                              <input type="checkbox" checked={fastMode} onChange={() => setFastMode(!fastMode)} disabled={isSimulating} className="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500" />
+                              <span className="text-sm font-medium text-gray-700">Fast Mode</span>
+                          </label>
+                          <button onClick={runSimulation} disabled={isSimulating} className={`w-full sm:w-auto px-8 py-3 bg-blue-600 text-white font-bold rounded-md shadow-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 ${isSimulating ? 'pulse' : ''}`}>
+                              {isSimulating ? (
+                                <span className="flex items-center">
+                                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                  Simulating...
+                                </span>
+                              ) : 'Run Simulation'}
+                          </button>
+                      </div>
+                  </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-800">Live Transmission</h2>
+                  <div className="relative min-h-[24rem] max-h-[32rem] bg-gray-100 rounded-lg p-4 flex justify-between items-center overflow-hidden">
+                      <div className="w-1/3 h-full bg-blue-100 rounded-lg p-3 flex flex-col">
+                          <h3 className="text-lg font-semibold text-blue-800 text-center">Sender (UE)</h3>
+                          <p className="text-sm font-medium mt-2 text-gray-600">Tx Buffer:</p>
+                          <div className="flex flex-wrap p-2 bg-blue-200 rounded mt-2 flex-grow overflow-y-auto">
+                              {txBuffer.slice(0, 50).map(pdu => <div key={pdu.seq_num} title={`PDU ${pdu.seq_num}`} className="pdu-buffer bg-blue-600 rounded-sm"></div>)}
+                          </div>
+                      </div>
+                      <div className="absolute w-full h-full top-0 left-0">{packets.slice(-10).map(renderPacket)}</div>
+                      <div className="w-1/3 h-full bg-green-100 rounded-lg p-3 flex flex-col">
+                          <h3 className="text-lg font-semibold text-green-800 text-center">Receiver (gNB)</h3>
+                      </div>
+                  </div>
+                </div>
+                <div className="space-y-8">
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                      <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-800">Key Performance Indicators</h2>
+                      <div className="grid grid-cols-2 gap-4 text-center mt-4">
+                          <div className="p-3 bg-gray-50 rounded-lg shadow-sm"><p className="text-sm text-gray-500">Retrans. Rate</p><p className="text-2xl font-bold text-red-600">{(kpis.retransmission_rate * 100).toFixed(2)}%</p></div>
+                          <div className="p-3 bg-gray-50 rounded-lg shadow-sm"><p className="text-sm text-gray-500">Packet Loss</p><p className="text-2xl font-bold text-orange-600">{(kpis.packet_loss_rate * 100).toFixed(2)}%</p></div>
+                      </div>
+                      <div className="mt-6"><h4 className="font-semibold text-center text-gray-700">Throughput (PDUs/s)</h4><KpiChart data={throughputHistory} yLabel="PDUs/s" /></div>
+                      <div className="mt-6"><h4 className="font-semibold text-center text-gray-700">Average Latency (s)</h4><KpiChart data={latencyHistory} yLabel="Seconds" /></div>
+                    </div>
+                    <div className="bg-white rounded-xl shadow-lg p-6">
+                        <h2 className="text-xl font-bold mb-4 border-b pb-2 text-gray-800">Event Log</h2>
+                        <div ref={logRef} className="min-h-[16rem] max-h-[24rem] overflow-y-auto bg-gray-900 text-white font-mono text-xs p-4 rounded-md">
+                            {log.map((entry, i) => { let color = {'error':'text-red-400', 'success':'text-green-400', 'warn':'text-yellow-400', 'start':'text-blue-400 font-bold'}[entry.type] || 'text-gray-300'; return <p key={i} className={color}>{entry.text}</p> })}
+                        </div>
+                    </div>
+                </div>
+              </div>
+            </div>
+        );
+      };
+
+      return (
+        <ErrorBoundary>
+          <div className="min-h-screen bg-gray-50 text-gray-800 p-6 lg:p-8">
+            <header className="text-center mb-8">
+              <h1 className="text-4xl font-extrabold text-gray-900">5G RLC Protocol Visualizer</h1>
+              <p className="text-lg text-gray-600 mt-2">Simulating AM and UM modes with real-time feedback</p>
+            </header>
+            {renderContent()}
+          </div>
+        </ErrorBoundary>
+      );
+    };
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+
+  <script id="python-code" type="text/python">
+import asyncio
+import random
+import time
+from collections import deque
+import json
+
+class RLC_PDU:
+    def __init__(self, seq_num, data, size):
+        self.seq_num, self.data, self.size = seq_num, data, size
+        self.acked, self.sent_time = False, None
+    def to_dict(self): 
+        return {'seq_num': self.seq_num if self.seq_num is not None else -1, 'size': self.size if self.size is not None else 0}
+
+class RLCEntity:
+    def __init__(self, mode, buffer_size=1000, reordering_timer=0.1):
+        self.mode, self.buffer_size, self.reordering_timer = mode, buffer_size, reordering_timer
+        self.tx_buffer, self.rx_buffer = deque(maxlen=buffer_size), deque()
+        self.next_seq_num = 0
+        self.stats = {'sent_pdus': 0, 'received_pdus': 0, 'retransmissions': 0, 'packet_loss': 0, 'total_latency': 0, 'start_time': time.time()}
+
+    def segment_sdu(self, sdu_data, max_pdu_size):
+        return [sdu_data[i:i + max_pdu_size] for i in range(0, len(sdu_data), max_pdu_size)]
+
+    def compute_kpis(self):
+        try:
+            duration = time.time() - self.stats['start_time']
+            return {
+                'retransmission_rate': self.stats['retransmissions'] / max(self.stats['sent_pdus'], 1),
+                'throughput': self.stats['received_pdus'] / max(duration, 0.001),
+                'avg_latency': self.stats['total_latency'] / max(self.stats['received_pdus'], 1) if self.stats['received_pdus'] > 0 else 0,
+                'packet_loss_rate': self.stats['packet_loss'] / max(self.stats['sent_pdus'], 1)
+            }
+        except Exception as e:
+            print(f"KPI computation error: {str(e)}")
+            return {'retransmission_rate': 0, 'throughput': 0, 'avg_latency': 0, 'packet_loss_rate': 0}
+
+tests = [
+    {'mode': 'AM', 'scenario': 'Reliable (Low Loss)', 'num_pdus': 30, 'loss_prob': 0.05, 'sdu_size': 0},
+    {'mode': 'AM', 'scenario': 'Congested (High Loss)', 'num_pdus': 30, 'loss_prob': 0.3, 'sdu_size': 0},
+    {'mode': 'AM', 'scenario': 'Buffer Overflow Risk', 'num_pdus': 50, 'loss_prob': 0.05, 'sdu_size': 0, 'buffer_size': 30},
+    {'mode': 'UM', 'scenario': 'Real-Time Video (Loss Tolerant)', 'num_pdus': 30, 'loss_prob': 0.15, 'sdu_size': 0},
+    {'mode': 'UM', 'scenario': 'Large SDU Segmentation', 'num_pdus': 0, 'loss_prob': 0.1, 'sdu_size': 2000}
+]
+
+def get_scenarios_for_js(): return json.dumps(tests)
+
+async def run_single_test_js(test_index, fast_mode=False):
+    js_event_callback = globals().get('js_event_callback')
+    if not js_event_callback:
+        print("Error: js_event_callback not set")
+        return
+
+    try:
+        params = tests[test_index]
+        js_event_callback(json.dumps({'type': 'SIM_START', 'scenario_name': f"{params['mode']} - {params['scenario']}"}))
+        await asyncio.sleep(0.05)
+
+        rlc = RLCEntity(mode=params['mode'], buffer_size=params.get('buffer_size', 100))
+
+        async def send_and_receive(data, size, loss_prob):
+            pdu = RLC_PDU(rlc.next_seq_num, data, size); pdu.sent_time = time.time()
+            rlc.tx_buffer.append(pdu); rlc.stats['sent_pdus'] += 1; rlc.next_seq_num += 1
+            
+            js_event_callback(json.dumps({'type': 'TX_BUFFER_UPDATE', 'buffer_pdus': [p.to_dict() for p in rlc.tx_buffer]}))
+            js_event_callback(json.dumps({'type': 'PDU_SENT', 'pdu': pdu.to_dict()}))
+            await asyncio.sleep(0.1 if fast_mode else 0.3)
+
+            if random.random() < loss_prob:
+                rlc.stats['packet_loss'] += 1; js_event_callback(json.dumps({'type': 'PDU_LOST_TX', 'seq_num': pdu.seq_num})); return
+
+            if rlc.mode == 'AM' and random.random() < loss_prob:
+                js_event_callback(json.dumps({'type': 'PDU_LOST_ACK', 'seq_num': pdu.seq_num}))
+            else:
+                if rlc.mode == 'AM': pdu.acked = True
+                rlc.stats['received_pdus'] += 1; rlc.stats['total_latency'] += time.time() - pdu.sent_time
+                js_event_callback(json.dumps({'type': 'PDU_RECEIVED', 'pdu': pdu.to_dict()}))
+            
+            if rlc.mode == 'AM':
+                rlc.tx_buffer = deque([p for p in rlc.tx_buffer if not p.acked], maxlen=rlc.buffer_size)
+                js_event_callback(json.dumps({'type': 'TX_BUFFER_UPDATE', 'buffer_pdus': [p.to_dict() for p in rlc.tx_buffer]}))
+
+        async def retransmit_unacked(loss_prob):
+            if rlc.mode != 'AM': return
+            retransmitted_pdus = []
+            for pdu in list(rlc.tx_buffer):
+                if not pdu.acked and (time.time() - pdu.sent_time) > rlc.reordering_timer:
+                    rlc.stats['retransmissions'] += 1
+                    js_event_callback(json.dumps({'type': 'RETRANSMIT', 'pdu': pdu.to_dict()})); await asyncio.sleep(0.1 if fast_mode else 0.3)
+                    if random.random() > loss_prob:
+                        pdu.acked = True; rlc.stats['received_pdus'] += 1; rlc.stats['total_latency'] += time.time() - pdu.sent_time
+                        js_event_callback(json.dumps({'type': 'PDU_RECEIVED', 'pdu': pdu.to_dict()})); retransmitted_pdus.append(pdu.seq_num)
+                    else: js_event_callback(json.dumps({'type': 'PDU_LOST_ACK', 'seq_num': pdu.seq_num}))
+            if retransmitted_pdus:
+                rlc.tx_buffer = deque([p for p in rlc.tx_buffer if not p.acked], maxlen=rlc.buffer_size)
+                js_event_callback(json.dumps({'type': 'TX_BUFFER_UPDATE', 'buffer_pdus': [p.to_dict() for p in rlc.tx_buffer]}))
+
+        pdu_generator = rlc.segment_sdu("D" * params['sdu_size'], 100) if params['sdu_size'] > 0 else (f"PDU-{i}" for i in range(params['num_pdus']))
+        
+        for data in pdu_generator:
+            await send_and_receive(data, len(data), params['loss_prob'])
+            await retransmit_unacked(params['loss_prob'])
+            js_event_callback(json.dumps({'type': 'KPI_UPDATE', 'kpis': rlc.compute_kpis()}))
+            await asyncio.sleep(0.02 if fast_mode else 0.05)
+
+        await retransmit_unacked(params['loss_prob'])
+        js_event_callback(json.dumps({'type': 'SIM_END', 'final_kpis': rlc.compute_kpis()}))
+    except Exception as e:
+        print(f"Simulation error: {str(e)}")
+        js_event_callback(json.dumps({'type': 'SIM_END', 'error': str(e)}))
+  </script>
+</body>
+</html>
